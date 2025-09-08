@@ -1,0 +1,26 @@
+{
+    "name": "Vault",
+    "rootNamespace": "",
+    "references": [
+        "GUID:6055be8ebefd69e48b49212b09b47b2f",
+        "GUID:343deaaf83e0cee4ca978e7df0b80d21",
+        "GUID:f51ebe6a0ceec4240a699833d6309b23",
+        "GUID:d8b63aba1907145bea998dd612889d6b",
+        "GUID:52a1977fdd484baabd8add73f16b43db",
+        "GUID:a5baed0c9693541a5bd947d336ec7659",
+        "GUID:734d92eba21c94caba915361bd5ac177",
+        "GUID:e0cd26848372d4e5c891c569017e11f1"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "Castle.Core.dll",
+        "Sirenix.Utilities.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
