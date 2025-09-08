@@ -25,6 +25,11 @@ namespace Vault {
                 action(e, i++);
             }
         }
+        public static void ForEach<T>(this IEnumerable<T> ie, Action<T> action) {
+            foreach (var e in ie) {
+                action(e);
+            }
+        }
 
 
         public static Optional<T> LastOptional<T>(this IEnumerable<T> source) {
