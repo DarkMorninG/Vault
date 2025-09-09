@@ -4,7 +4,9 @@
     "displayName": "Vault",
     "author": { "name": "DarkMorninG" },
     "dependencies": {
-        "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask",
         "com.unity.entities": "1.3.14"
-    }
+    },
+    "git-dependencies": [
+      "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask"
+    ]
 }
