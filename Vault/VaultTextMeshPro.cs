@@ -47,7 +47,7 @@ namespace Vault {
             string prefix,
             long count,
             CancellationToken cancellationToken) {
-            for (int i = 0; i < count; i++) {
+            for (int i = 0; i <= count; i++) {
                 me.text = prefix + i;
                 await UniTask.Delay(TimeSpan.FromSeconds(0.01f), cancellationToken: cancellationToken);
             }
@@ -60,7 +60,7 @@ namespace Vault {
             CancellationToken cancellationToken) {
             me.text = start.ToString();
             var timePerNumber = seconds / add;
-            for (int i = 0; i < add; i++) {
+            for (int i = 0; i <= add; i++) {
                 me.text = (start + i).ToString();
                 await UniTask.Delay(TimeSpan.FromSeconds(timePerNumber), cancellationToken: cancellationToken);
             }
