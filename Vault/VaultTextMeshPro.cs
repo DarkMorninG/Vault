@@ -22,6 +22,11 @@ namespace Vault {
             return AsyncRuntime.Create(CountUp(textMeshProUGUI, prefix, count, cancellationTokenSource.Token), cancellationTokenSource);
         }
 
+        public static IAsyncRuntime StartCountUp(this TextMeshProUGUI textMeshProUGUI, long start, long add, float time) {
+            var cancellationTokenSource = new CancellationTokenSource();
+            return AsyncRuntime.Create(CountUp(textMeshProUGUI, start, add, time, cancellationTokenSource.Token), cancellationTokenSource);
+        }
+
         public static IAsyncRuntime FadeTextOut(this TextMeshProUGUI textMesh, float time) {
             return AsyncRuntime.Create(FadeTextToZeroAlpha(time, textMesh));
         }
@@ -45,6 +50,19 @@ namespace Vault {
             for (int i = 0; i < count; i++) {
                 me.text = prefix + i;
                 await UniTask.Delay(TimeSpan.FromSeconds(0.01f), cancellationToken: cancellationToken);
+            }
+        }
+
+        private static async UniTask CountUp(TextMeshProUGUI me,
+            long start,
+            long add,
+            float seconds,
+            CancellationToken cancellationToken) {
+            me.text = start.ToString();
+            var timePerNumber = seconds / add;
+            for (int i = 0; i < add; i++) {
+                me.text = (start + i).ToString();
+                await UniTask.Delay(TimeSpan.FromSeconds(timePerNumber), cancellationToken: cancellationToken);
             }
         }
 
