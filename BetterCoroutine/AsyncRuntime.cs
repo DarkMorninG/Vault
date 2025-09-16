@@ -127,7 +127,7 @@ namespace Vault.BetterCoroutine {
         }
 
         private async Task EverySecondDoInternal(Action todo, Func<bool> toAbort, Func<float> seconds) {
-            while (toAbort?.Invoke() ?? true) {
+            while (!toAbort?.Invoke() ?? true) {
                 await UniTask.Delay(TimeSpan.FromSeconds(seconds.Invoke()),
                     cancellationToken: _cancellationTokenSource.Token);
                 todo.Invoke();
