@@ -5,8 +5,9 @@ using System.Text.RegularExpressions;
 using UnityEditor;
 // Provide simple value get/set methods for SerializedProperty.  Can be used with
 // any data types and with arbitrarily deeply-pathed properties.
-namespace VaultEditor
-{
+namespace VaultEditor {
+#if UNITY_600_OR_NEWER
+    
     public static class SerializedPropertyExtensions {
         /// (Extension) Get the value of the serialized property.
         public static object GetValue(this SerializedProperty property) {
@@ -153,4 +154,5 @@ namespace VaultEditor
             }
         }
     }
- }
+#endif
+}
