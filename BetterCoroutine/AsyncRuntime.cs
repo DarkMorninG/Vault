@@ -78,7 +78,7 @@ namespace Vault.BetterCoroutine {
                 action?.Invoke();
             }
             catch (Exception ex) {
-                UnityThread.executeInUpdate(() => throw ex);
+                UnityThread.executeInUpdate(() => ExceptionDispatchInfo.Capture(ex).Throw());
             }
             finally {
                 TaskFinished(false);
@@ -93,7 +93,7 @@ namespace Vault.BetterCoroutine {
                 toExecute?.Invoke();
             }
             catch (Exception ex) {
-                UnityThread.executeInUpdate(() => throw ex);
+                UnityThread.executeInUpdate(() => ExceptionDispatchInfo.Capture(ex).Throw());
             }
             finally {
                 TaskFinished(false);
@@ -108,7 +108,7 @@ namespace Vault.BetterCoroutine {
                 action?.Invoke();
             }
             catch (Exception ex) {
-                UnityThread.executeInUpdate(() => throw ex);
+                UnityThread.executeInUpdate(() => ExceptionDispatchInfo.Capture(ex).Throw());
             }
             finally {
                 TaskFinished(false);
@@ -123,7 +123,7 @@ namespace Vault.BetterCoroutine {
                 action?.Invoke();
             }
             catch (Exception ex) {
-                UnityThread.executeInUpdate(() => throw ex);
+                UnityThread.executeInUpdate(() => ExceptionDispatchInfo.Capture(ex).Throw());
             }
             finally {
                 TaskFinished(false);
@@ -141,7 +141,7 @@ namespace Vault.BetterCoroutine {
                 }
             }
             catch (Exception ex) {
-                UnityThread.executeInUpdate(() => throw ex);
+                UnityThread.executeInUpdate(() => ExceptionDispatchInfo.Capture(ex).Throw());
             }
             finally {
                 TaskFinished(false);
