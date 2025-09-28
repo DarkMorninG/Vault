@@ -20,7 +20,7 @@ namespace Vault.BetterCoroutine {
         private CancellationTokenSource _cancellationTokenSource = new();
 
         static AsyncRuntime() {
-            UniTaskScheduler.UnobservedTaskException += UnityEngine.Debug.Log;
+            UniTaskScheduler.UnobservedTaskException += exception => throw exception;
         }
 
 
