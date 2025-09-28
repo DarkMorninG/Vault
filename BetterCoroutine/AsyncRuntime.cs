@@ -20,10 +20,6 @@ namespace Vault.BetterCoroutine {
         private UniTask _currentTask;
         private CancellationTokenSource _cancellationTokenSource = new();
 
-        static AsyncRuntime() {
-            UniTaskScheduler.UnobservedTaskException += exception => ExceptionDispatchInfo.Capture(exception).Throw();
-        }
-
 
         private AsyncRuntime(UniTask currentTask, CancellationTokenSource cancellationTokenSource) : this(currentTask) {
             _cancellationTokenSource = cancellationTokenSource ?? new CancellationTokenSource();
@@ -81,6 +77,9 @@ namespace Vault.BetterCoroutine {
                 await UniTask.SwitchToMainThread();
                 action?.Invoke();
             }
+            catch (Exception ex) {
+                UnityThread.executeInUpdate(() => throw ex);
+            }
             finally {
                 TaskFinished(false);
             }
@@ -90,24 +89,45 @@ namespace Vault.BetterCoroutine {
             await WaitWhilePaused();
             await UniTask.WaitUntil(trueBefore, cancellationToken: _cancellationTokenSource.Token);
             await WaitWhilePaused();
-            toExecute?.Invoke();
-            TaskFinished(false);
+            try {
+                toExecute?.Invoke();
+            }
+            catch (Exception ex) {
+                UnityThread.executeInUpdate(() => throw ex);
+            }
+            finally {
+                TaskFinished(false);
+            }
         }
 
         private async UniTask WaitForSecondsInternal(Action action, float seconds) {
             await WaitWhilePaused();
             await UniTask.Delay(TimeSpan.FromSeconds(seconds), DelayType.Realtime, cancellationToken: _cancellationTokenSource.Token);
             await WaitWhilePaused();
-            action?.Invoke();
-            TaskFinished(false);
+            try {
+                action?.Invoke();
+            }
+            catch (Exception ex) {
+                UnityThread.executeInUpdate(() => throw ex);
+            }
+            finally {
+                TaskFinished(false);
+            }
         }
 
         private async UniTask WaitForEndOfFrameInternal(Action action) {
             await WaitWhilePaused();
             await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
             await WaitWhilePaused();
-            action?.Invoke();
-            TaskFinished(false);
+            try {
+                action?.Invoke();
+            }
+            catch (Exception ex) {
+                UnityThread.executeInUpdate(() => throw ex);
+            }
+            finally {
+                TaskFinished(false);
+            }
         }
 
         private async UniTask EverySecondDoInternal(Action todo, Func<bool> toAbort, Func<float> seconds) {
@@ -119,6 +139,9 @@ namespace Vault.BetterCoroutine {
                     await WaitWhilePaused();
                     todo?.Invoke();
                 }
+            }
+            catch (Exception ex) {
+                UnityThread.executeInUpdate(() => throw ex);
             }
             finally {
                 TaskFinished(false);
