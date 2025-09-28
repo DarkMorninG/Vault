@@ -32,6 +32,11 @@ namespace Vault.BetterCoroutine {
         private AsyncRuntime(UniTask currentTask) {
             currentTask.AttachExternalCancellation(_cancellationTokenSource.Token);
             _currentTask = currentTask.AsTask();
+            _currentTask.ContinueWith(task => {
+                if (task.IsFaulted && task.Exception != null) {
+                    UnityThread.executeInUpdate(() => throw task.Exception);
+                }
+            });
         }
 
         private AsyncRuntime(Action toExecute, bool isEndOfFrame) {
