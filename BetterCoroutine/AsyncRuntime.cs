@@ -1,162 +1,121 @@
 using System;
-using System.Collections;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Runtime.ExceptionServices;
 using System.Threading;
-using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace Vault.BetterCoroutine {
-    /// A Task object represents a coroutine.  Tasks can be started, paused, and stopped.
-    /// It is an error to attempt to start a task that has been stopped or which has
-    /// naturally terminated.
+    /// A Task object represents a coroutine. Tasks can be started, paused, and stopped.
+    /// Converted to use UniTask only, with robust main-thread exception handling.
     public class AsyncRuntime : IAsyncRuntime {
         private bool _isFinished;
+        private bool _isRunning;
+        private bool _isPaused;
+        private UniTaskCompletionSource<bool> _resumeTcs;
 
         public bool IsFinished => _isFinished;
 
-        private readonly TaskManager.TaskState _task;
-
         private Action _afterFinished;
 
-        private readonly Task _currentTask;
-        private readonly CancellationTokenSource _cancellationTokenSource = new();
-
+        private UniTask _currentTask;
+        private CancellationTokenSource _cancellationTokenSource = new();
 
         private AsyncRuntime(UniTask currentTask, CancellationTokenSource cancellationTokenSource) : this(currentTask) {
-            _cancellationTokenSource = cancellationTokenSource;
+            _cancellationTokenSource = cancellationTokenSource ?? new CancellationTokenSource();
+            _currentTask = WrapWithPause(currentTask).AttachExternalCancellation(_cancellationTokenSource.Token);
         }
 
         private AsyncRuntime(UniTask currentTask) {
-            currentTask.AttachExternalCancellation(_cancellationTokenSource.Token);
-            _currentTask = currentTask.AsTask();
-            _currentTask.ContinueWith(task => {
-                if (task.IsFaulted && task.Exception != null) {
-                    UnityThread.executeInUpdate(() => throw task.Exception);
-                }
-            });
+            _currentTask = WrapWithPause(currentTask).AttachExternalCancellation(_cancellationTokenSource.Token);
         }
 
         private AsyncRuntime(Action toExecute, bool isEndOfFrame) {
             _currentTask = isEndOfFrame ? WaitForEndOfFrameInternal(toExecute) : CreateInternal(toExecute);
-            _currentTask.ContinueWith(task => {
-                if (task.IsFaulted && task.Exception != null) {
-                    UnityThread.executeInUpdate(() => throw task.Exception);
-                }
-            });
-            // _currentTask.GetAwaiter()
-            //     .OnCompleted(() => {
-            //         if (_currentTask.Exception == null) return;
-            //         foreach (var exceptionDispatchInfo in _currentTask.Exception.InnerExceptions
-            //             .Select(ExceptionDispatchInfo.Capture)) {
-            //             exceptionDispatchInfo.Throw();
-            //         }
-            //     });
         }
 
         private AsyncRuntime(Action toExecute, Func<bool> waitUntilToExecute) {
             _currentTask = WaitUntilInternal(waitUntilToExecute, toExecute);
-            _currentTask.ContinueWith(task => {
-                if (task.IsFaulted && task.Exception != null) {
-                    UnityThread.executeInUpdate(() => throw task.Exception);
-                }
-            });
-            // _currentTask.GetAwaiter()
-            //     .OnCompleted(() => {
-            //         if (_currentTask.Exception == null) return;
-            //         foreach (var exceptionDispatchInfo in _currentTask.Exception.InnerExceptions
-            //             .Select(ExceptionDispatchInfo.Capture)) {
-            //             exceptionDispatchInfo.Throw();
-            //         }
-            //     });
         }
 
         private AsyncRuntime(Action toExecute, float secondsUntilExecute) {
             _currentTask = WaitForSecondsInternal(toExecute, secondsUntilExecute);
-            _currentTask.ContinueWith(task => {
-                if (task.IsFaulted && task.Exception != null) {
-                    UnityThread.executeInUpdate(() => throw task.Exception);
-                }
-            });
-            // _currentTask.GetAwaiter()
-            //     .OnCompleted(() => {
-            //         if (_currentTask.Exception == null) return;
-            //         foreach (var exceptionDispatchInfo in _currentTask.Exception.InnerExceptions
-            //             .Select(ExceptionDispatchInfo.Capture)) {
-            //             exceptionDispatchInfo.Throw();
-            //         }
-            //     });
         }
 
         private AsyncRuntime(Action todo, Func<bool> toAbort, Func<float> seconds) {
             _currentTask = EverySecondDoInternal(todo, toAbort, seconds);
-            _currentTask.ContinueWith(task => {
-                if (task.IsFaulted && task.Exception != null) {
-                    UnityThread.executeInUpdate(() => throw task.Exception);
-                }
-            });
-            // _currentTask.GetAwaiter()
-            //     .OnCompleted(() => {
-            //         if (_currentTask.Exception == null) return;
-            //         foreach (var exceptionDispatchInfo in _currentTask.Exception.InnerExceptions
-            //             .Select(ExceptionDispatchInfo.Capture)) {
-            //             exceptionDispatchInfo.Throw();
-            //         }
-            //     });
         }
 
-
-        /// Returns true if and only if the coroutine is running.  Paused tasks
-        /// are considered to be running.
-        public bool Running => _currentTask.Status.Equals(TaskStatus.Running) ||
-                               _currentTask.Status.Equals(TaskStatus.WaitingForActivation);
+        /// Returns true if and only if the coroutine is running. Paused tasks are considered to be running.
+        public bool Running => _isRunning && !_isFinished;
 
         /// Returns true if and only if the coroutine is currently paused.
-        public bool Paused => _task.Paused;
+        public bool Paused => _isPaused;
 
         public void Wait() {
-            _currentTask.Wait();
+            // Synchronously waits for the UniTask to complete. Avoid on main thread.
+            _currentTask.GetAwaiter().GetResult();
         }
 
-        private Task CreateInternal(Action action) {
-            var task = new Task(() => {
-                    action.Invoke();
-                    TaskFinished(false);
-                },
-                _cancellationTokenSource.Token);
-            return task;
+        private async UniTask WaitWhilePaused() {
+            // Simple pause gate: waits until unpaused; releases also when stopped.
+            while (_isPaused && !_isFinished) {
+                if (_cancellationTokenSource.IsCancellationRequested) break;
+                _resumeTcs ??= new UniTaskCompletionSource<bool>();
+                await _resumeTcs.Task;
+            }
         }
 
-        private async Task WaitUntilInternal(Func<bool> trueBefore, Action toExecute) {
+        private async UniTask WrapWithPause(UniTask task) {
+            await WaitWhilePaused();
+            await task;
+        }
+
+        private async UniTask CreateInternal(Action action) {
+            try {
+                await WaitWhilePaused();
+                await UniTask.RunOnThreadPool(() => action?.Invoke());
+            }
+            finally {
+                TaskFinished(false);
+            }
+        }
+
+        private async UniTask WaitUntilInternal(Func<bool> trueBefore, Action toExecute) {
+            await WaitWhilePaused();
             await UniTask.WaitUntil(trueBefore, cancellationToken: _cancellationTokenSource.Token);
+            await WaitWhilePaused();
             toExecute?.Invoke();
             TaskFinished(false);
         }
 
-        private async Task WaitForSecondsInternal(Action action, float seconds) {
-            await UniTask.Delay(TimeSpan.FromSeconds(seconds),
-                DelayType.Realtime,
-                cancellationToken: _cancellationTokenSource.Token);
+        private async UniTask WaitForSecondsInternal(Action action, float seconds) {
+            await WaitWhilePaused();
+            await UniTask.Delay(TimeSpan.FromSeconds(seconds), DelayType.Realtime, cancellationToken: _cancellationTokenSource.Token);
+            await WaitWhilePaused();
             action?.Invoke();
             TaskFinished(false);
         }
 
-        private async Task WaitForEndOfFrameInternal(Action action) {
+        private async UniTask WaitForEndOfFrameInternal(Action action) {
+            await WaitWhilePaused();
             await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
+            await WaitWhilePaused();
             action?.Invoke();
             TaskFinished(false);
         }
 
-        private async Task EverySecondDoInternal(Action todo, Func<bool> toAbort, Func<float> seconds) {
-            while (!toAbort?.Invoke() ?? true) {
-                await UniTask.Delay(TimeSpan.FromSeconds(seconds.Invoke()),
-                    cancellationToken: _cancellationTokenSource.Token);
-                todo.Invoke();
+        private async UniTask EverySecondDoInternal(Action todo, Func<bool> toAbort, Func<float> seconds) {
+            try {
+                while (!toAbort?.Invoke() ?? true) {
+                    await WaitWhilePaused();
+                    var waitSeconds = seconds != null ? seconds.Invoke() : 1f;
+                    await UniTask.Delay(TimeSpan.FromSeconds(waitSeconds), cancellationToken: _cancellationTokenSource.Token);
+                    await WaitWhilePaused();
+                    todo?.Invoke();
+                }
             }
-
-            TaskFinished(false);
+            finally {
+                TaskFinished(false);
+            }
         }
 
         public IAsyncRuntime AndAfter(Action action) {
@@ -177,42 +136,75 @@ namespace Vault.BetterCoroutine {
             return andAfterWaitForSeconds;
         }
 
-
-        /// Termination event.  Triggered when the coroutine completes execution.
+        /// Termination event. Triggered when the coroutine completes execution.
         public event IAsyncRuntime.FinishedHandler OnFinished;
 
         /// Begins execution of the coroutine
         public void Start() {
-            _currentTask.Start();
+            if (_isRunning || _isFinished) return;
+            _isRunning = true;
+            Run().Forget();
+        }
+
+        private async UniTask Run() {
+            try {
+                await _currentTask.AttachExternalCancellation(_cancellationTokenSource.Token);
+            }
+            catch (OperationCanceledException) {
+                // Cancellation is considered manual stop
+                await UniTask.SwitchToMainThread();
+                OnFinished?.Invoke(true);
+            }
+            catch (Exception ex) {
+                // Ensure exceptions are logged on Unity main thread
+                await UniTask.SwitchToMainThread();
+                UnityEngine.Debug.LogError(ex);
+                TaskFinished(false);
+            }
+            finally {
+                _isRunning = false;
+                // If no internal flow signaled finish yet, do it now
+                if (!_isFinished) TaskFinished(false);
+            }
         }
 
         /// Discontinues execution of the coroutine at its next yield.
         public void Stop() {
+            if (_isFinished) return;
+            // ensure any paused waiters are released
+            Unpause();
             _cancellationTokenSource.Cancel();
-            _currentTask.Dispose();
+            _isRunning = false;
             OnFinished?.Invoke(true);
         }
 
         public void Pause() {
-            _task.Pause();
+            if (_isFinished) return;
+            _isPaused = true;
+            // create a new gate if none exists, so awaiters can wait
+            _resumeTcs ??= new UniTaskCompletionSource<bool>();
         }
 
         public void Unpause() {
-            _task.Unpause();
+            if (!_isPaused) return;
+            _isPaused = false;
+            // release any awaiters
+            _resumeTcs?.TrySetResult(true);
+            _resumeTcs = null;
         }
-
 
         public void AndAfterFinishDo(Action afterFinished) {
             _afterFinished = afterFinished;
         }
 
         private void TaskFinished(bool manual) {
+            if (_isFinished) return;
             _isFinished = true;
             var handler = OnFinished;
+            // Invoke callbacks on main thread
             UnityThread.executeInUpdate(() => _afterFinished?.Invoke());
             handler?.Invoke(manual);
         }
-
 
         public static IAsyncRuntime Create(UniTask task) {
             return new AsyncRuntime(task);
@@ -221,7 +213,6 @@ namespace Vault.BetterCoroutine {
         public static IAsyncRuntime Create(UniTask task, CancellationTokenSource cancellationTokenSource) {
             return new AsyncRuntime(task, cancellationTokenSource);
         }
-        
 
         public static IAsyncRuntime Create(Action action) {
             return new AsyncRuntime(action, false);
