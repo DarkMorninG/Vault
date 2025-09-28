@@ -38,50 +38,70 @@ namespace Vault.BetterCoroutine {
 
         private AsyncRuntime(Action toExecute, bool isEndOfFrame) {
             _currentTask = isEndOfFrame ? WaitForEndOfFrameInternal(toExecute) : CreateInternal(toExecute);
-            _currentTask.GetAwaiter()
-                .OnCompleted(() => {
-                    if (_currentTask.Exception == null) return;
-                    foreach (var exceptionDispatchInfo in _currentTask.Exception.InnerExceptions
-                        .Select(ExceptionDispatchInfo.Capture)) {
-                        exceptionDispatchInfo.Throw();
-                    }
-                });
+            _currentTask.ContinueWith(task => {
+                if (task.IsFaulted && task.Exception != null) {
+                    throw task.Exception;
+                }
+            });
+            // _currentTask.GetAwaiter()
+            //     .OnCompleted(() => {
+            //         if (_currentTask.Exception == null) return;
+            //         foreach (var exceptionDispatchInfo in _currentTask.Exception.InnerExceptions
+            //             .Select(ExceptionDispatchInfo.Capture)) {
+            //             exceptionDispatchInfo.Throw();
+            //         }
+            //     });
         }
 
         private AsyncRuntime(Action toExecute, Func<bool> waitUntilToExecute) {
             _currentTask = WaitUntilInternal(waitUntilToExecute, toExecute);
-            _currentTask.GetAwaiter()
-                .OnCompleted(() => {
-                    if (_currentTask.Exception == null) return;
-                    foreach (var exceptionDispatchInfo in _currentTask.Exception.InnerExceptions
-                        .Select(ExceptionDispatchInfo.Capture)) {
-                        exceptionDispatchInfo.Throw();
-                    }
-                });
+            _currentTask.ContinueWith(task => {
+                if (task.IsFaulted && task.Exception != null) {
+                    throw task.Exception;
+                }
+            });
+            // _currentTask.GetAwaiter()
+            //     .OnCompleted(() => {
+            //         if (_currentTask.Exception == null) return;
+            //         foreach (var exceptionDispatchInfo in _currentTask.Exception.InnerExceptions
+            //             .Select(ExceptionDispatchInfo.Capture)) {
+            //             exceptionDispatchInfo.Throw();
+            //         }
+            //     });
         }
 
         private AsyncRuntime(Action toExecute, float secondsUntilExecute) {
             _currentTask = WaitForSecondsInternal(toExecute, secondsUntilExecute);
-            _currentTask.GetAwaiter()
-                .OnCompleted(() => {
-                    if (_currentTask.Exception == null) return;
-                    foreach (var exceptionDispatchInfo in _currentTask.Exception.InnerExceptions
-                        .Select(ExceptionDispatchInfo.Capture)) {
-                        exceptionDispatchInfo.Throw();
-                    }
-                });
+            _currentTask.ContinueWith(task => {
+                if (task.IsFaulted && task.Exception != null) {
+                    throw task.Exception;
+                }
+            });
+            // _currentTask.GetAwaiter()
+            //     .OnCompleted(() => {
+            //         if (_currentTask.Exception == null) return;
+            //         foreach (var exceptionDispatchInfo in _currentTask.Exception.InnerExceptions
+            //             .Select(ExceptionDispatchInfo.Capture)) {
+            //             exceptionDispatchInfo.Throw();
+            //         }
+            //     });
         }
 
         private AsyncRuntime(Action todo, Func<bool> toAbort, Func<float> seconds) {
             _currentTask = EverySecondDoInternal(todo, toAbort, seconds);
-            _currentTask.GetAwaiter()
-                .OnCompleted(() => {
-                    if (_currentTask.Exception == null) return;
-                    foreach (var exceptionDispatchInfo in _currentTask.Exception.InnerExceptions
-                        .Select(ExceptionDispatchInfo.Capture)) {
-                        exceptionDispatchInfo.Throw();
-                    }
-                });
+            _currentTask.ContinueWith(task => {
+                if (task.IsFaulted && task.Exception != null) {
+                    throw task.Exception;
+                }
+            });
+            // _currentTask.GetAwaiter()
+            //     .OnCompleted(() => {
+            //         if (_currentTask.Exception == null) return;
+            //         foreach (var exceptionDispatchInfo in _currentTask.Exception.InnerExceptions
+            //             .Select(ExceptionDispatchInfo.Capture)) {
+            //             exceptionDispatchInfo.Throw();
+            //         }
+            //     });
         }
 
 
