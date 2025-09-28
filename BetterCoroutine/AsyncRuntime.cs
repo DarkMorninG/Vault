@@ -33,14 +33,12 @@ namespace Vault.BetterCoroutine {
             currentTask.AttachExternalCancellation(_cancellationTokenSource.Token);
             _currentTask = currentTask.AsTask();
         }
-        
-
 
         private AsyncRuntime(Action toExecute, bool isEndOfFrame) {
             _currentTask = isEndOfFrame ? WaitForEndOfFrameInternal(toExecute) : CreateInternal(toExecute);
             _currentTask.ContinueWith(task => {
                 if (task.IsFaulted && task.Exception != null) {
-                    throw task.Exception;
+                    UnityThread.executeInUpdate(() => throw task.Exception);
                 }
             });
             // _currentTask.GetAwaiter()
@@ -57,7 +55,7 @@ namespace Vault.BetterCoroutine {
             _currentTask = WaitUntilInternal(waitUntilToExecute, toExecute);
             _currentTask.ContinueWith(task => {
                 if (task.IsFaulted && task.Exception != null) {
-                    throw task.Exception;
+                    UnityThread.executeInUpdate(() => throw task.Exception);
                 }
             });
             // _currentTask.GetAwaiter()
@@ -74,7 +72,7 @@ namespace Vault.BetterCoroutine {
             _currentTask = WaitForSecondsInternal(toExecute, secondsUntilExecute);
             _currentTask.ContinueWith(task => {
                 if (task.IsFaulted && task.Exception != null) {
-                    throw task.Exception;
+                    UnityThread.executeInUpdate(() => throw task.Exception);
                 }
             });
             // _currentTask.GetAwaiter()
@@ -91,7 +89,7 @@ namespace Vault.BetterCoroutine {
             _currentTask = EverySecondDoInternal(todo, toAbort, seconds);
             _currentTask.ContinueWith(task => {
                 if (task.IsFaulted && task.Exception != null) {
-                    throw task.Exception;
+                    UnityThread.executeInUpdate(() => throw task.Exception);
                 }
             });
             // _currentTask.GetAwaiter()
