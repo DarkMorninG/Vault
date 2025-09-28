@@ -77,6 +77,9 @@ namespace Vault.BetterCoroutine {
                 await UniTask.SwitchToMainThread();
                 action?.Invoke();
             }
+            catch (OperationCanceledException) {
+                //ignored
+            }
             catch (Exception ex) {
                 UnityThread.executeInUpdate(() => ExceptionDispatchInfo.Capture(ex).Throw());
             }
@@ -91,6 +94,9 @@ namespace Vault.BetterCoroutine {
             await WaitWhilePaused();
             try {
                 toExecute?.Invoke();
+            }
+            catch (OperationCanceledException) {
+                //ignored
             }
             catch (Exception ex) {
                 UnityThread.executeInUpdate(() => ExceptionDispatchInfo.Capture(ex).Throw());
@@ -107,6 +113,9 @@ namespace Vault.BetterCoroutine {
             try {
                 action?.Invoke();
             }
+            catch (OperationCanceledException) {
+                //ignored
+            }
             catch (Exception ex) {
                 UnityThread.executeInUpdate(() => ExceptionDispatchInfo.Capture(ex).Throw());
             }
@@ -121,6 +130,9 @@ namespace Vault.BetterCoroutine {
             await WaitWhilePaused();
             try {
                 action?.Invoke();
+            }
+            catch (OperationCanceledException) {
+                //ignored
             }
             catch (Exception ex) {
                 UnityThread.executeInUpdate(() => ExceptionDispatchInfo.Capture(ex).Throw());
@@ -139,6 +151,9 @@ namespace Vault.BetterCoroutine {
                     await WaitWhilePaused();
                     todo?.Invoke();
                 }
+            }
+            catch (OperationCanceledException) {
+                //ignored
             }
             catch (Exception ex) {
                 UnityThread.executeInUpdate(() => ExceptionDispatchInfo.Capture(ex).Throw());
