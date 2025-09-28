@@ -79,7 +79,8 @@ namespace Vault.BetterCoroutine {
         private async UniTask CreateInternal(Action action) {
             try {
                 await WaitWhilePaused();
-                await UniTask.RunOnThreadPool(() => action?.Invoke());
+                await UniTask.SwitchToMainThread();
+                action?.Invoke();
             }
             finally {
                 TaskFinished(false);
