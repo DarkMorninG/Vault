@@ -19,6 +19,11 @@ namespace Vault.BetterCoroutine {
         private UniTask _currentTask;
         private CancellationTokenSource _cancellationTokenSource = new();
 
+        static AsyncRuntime() {
+            UniTaskScheduler.UnobservedTaskException += UnityEngine.Debug.LogException;
+        }
+
+
         private AsyncRuntime(UniTask currentTask, CancellationTokenSource cancellationTokenSource) : this(currentTask) {
             _cancellationTokenSource = cancellationTokenSource ?? new CancellationTokenSource();
             _currentTask = WrapWithPause(currentTask).AttachExternalCancellation(_cancellationTokenSource.Token);
@@ -83,7 +88,6 @@ namespace Vault.BetterCoroutine {
             await WaitWhilePaused();
             await UniTask.WaitUntil(trueBefore, cancellationToken: _cancellationTokenSource.Token);
             await WaitWhilePaused();
-            await UniTask.SwitchToMainThread();
             toExecute?.Invoke();
             TaskFinished(false);
         }
@@ -92,7 +96,6 @@ namespace Vault.BetterCoroutine {
             await WaitWhilePaused();
             await UniTask.Delay(TimeSpan.FromSeconds(seconds), DelayType.Realtime, cancellationToken: _cancellationTokenSource.Token);
             await WaitWhilePaused();
-            await UniTask.SwitchToMainThread();
             action?.Invoke();
             TaskFinished(false);
         }
@@ -101,7 +104,6 @@ namespace Vault.BetterCoroutine {
             await WaitWhilePaused();
             await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
             await WaitWhilePaused();
-            await UniTask.SwitchToMainThread();
             action?.Invoke();
             TaskFinished(false);
         }
@@ -113,7 +115,6 @@ namespace Vault.BetterCoroutine {
                     var waitSeconds = seconds != null ? seconds.Invoke() : 1f;
                     await UniTask.Delay(TimeSpan.FromSeconds(waitSeconds), cancellationToken: _cancellationTokenSource.Token);
                     await WaitWhilePaused();
-                    await UniTask.SwitchToMainThread();
                     todo?.Invoke();
                 }
             }
