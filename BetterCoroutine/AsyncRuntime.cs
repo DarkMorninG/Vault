@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using System.Runtime.ExceptionServices;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -20,7 +21,8 @@ namespace Vault.BetterCoroutine {
         private CancellationTokenSource _cancellationTokenSource = new();
 
         static AsyncRuntime() {
-            UniTaskScheduler.UnobservedTaskException += exception => throw exception;
+            UniTaskScheduler.UnobservedTaskException += exception =>
+                UnityThread.executeInUpdate(() => ExceptionDispatchInfo.Capture(exception).Throw());
         }
 
 
@@ -161,9 +163,9 @@ namespace Vault.BetterCoroutine {
                 OnFinished?.Invoke(true);
             }
             catch (Exception ex) {
-                // Ensure exceptions are logged on Unity main thread
-                await UniTask.SwitchToMainThread();
-                UnityEngine.Debug.LogError(ex);
+                // Ensure exceptions surface on Unity main thread
+                UnityThread.executeInUpdate(() => ExceptionDispatchInfo.Capture(ex).Throw());
+                // Also mark as finished to unblock waiters
                 TaskFinished(false);
             }
             finally {
@@ -180,7 +182,7 @@ namespace Vault.BetterCoroutine {
             Unpause();
             _cancellationTokenSource.Cancel();
             _isRunning = false;
-            OnFinished?.Invoke(true);
+            UnityThread.executeInUpdate(() => OnFinished?.Invoke(true));
         }
 
         public void Pause() {
@@ -207,8 +209,10 @@ namespace Vault.BetterCoroutine {
             _isFinished = true;
             var handler = OnFinished;
             // Invoke callbacks on main thread
-            UnityThread.executeInUpdate(() => _afterFinished?.Invoke());
-            handler?.Invoke(manual);
+            UnityThread.executeInUpdate(() => {
+                _afterFinished?.Invoke();
+                handler?.Invoke(manual);
+            });
         }
 
         public static IAsyncRuntime Create(UniTask task) {
