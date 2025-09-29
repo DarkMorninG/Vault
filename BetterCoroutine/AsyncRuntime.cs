@@ -23,11 +23,11 @@ namespace Vault.BetterCoroutine {
 
         private AsyncRuntime(UniTask currentTask, CancellationTokenSource cancellationTokenSource) : this(currentTask) {
             _cancellationTokenSource = cancellationTokenSource ?? new CancellationTokenSource();
-            _currentTask = WrapWithPause(currentTask).AttachExternalCancellation(_cancellationTokenSource.Token);
+            _currentTask = currentTask.AttachExternalCancellation(_cancellationTokenSource.Token);
         }
 
         private AsyncRuntime(UniTask currentTask) {
-            _currentTask = WrapWithPause(currentTask).AttachExternalCancellation(_cancellationTokenSource.Token);
+            _currentTask = currentTask.AttachExternalCancellation(_cancellationTokenSource.Token);
         }
 
         private AsyncRuntime(Action toExecute, bool isEndOfFrame) {
@@ -67,13 +67,11 @@ namespace Vault.BetterCoroutine {
         }
 
         private async UniTask WrapWithPause(UniTask task) {
-            await WaitWhilePaused();
             await task;
         }
 
         private async UniTask CreateInternal(Action action) {
             try {
-                await WaitWhilePaused();
                 await UniTask.SwitchToMainThread();
                 action?.Invoke();
             }
@@ -89,9 +87,7 @@ namespace Vault.BetterCoroutine {
         }
 
         private async UniTask WaitUntilInternal(Func<bool> trueBefore, Action toExecute) {
-            await WaitWhilePaused();
             await UniTask.WaitUntil(trueBefore, cancellationToken: _cancellationTokenSource.Token);
-            await WaitWhilePaused();
             try {
                 toExecute?.Invoke();
             }
@@ -107,9 +103,7 @@ namespace Vault.BetterCoroutine {
         }
 
         private async UniTask WaitForSecondsInternal(Action action, float seconds) {
-            await WaitWhilePaused();
             await UniTask.Delay(TimeSpan.FromSeconds(seconds), DelayType.Realtime, cancellationToken: _cancellationTokenSource.Token);
-            await WaitWhilePaused();
             try {
                 action?.Invoke();
             }
@@ -125,9 +119,7 @@ namespace Vault.BetterCoroutine {
         }
 
         private async UniTask WaitForEndOfFrameInternal(Action action) {
-            await WaitWhilePaused();
             await UniTask.Yield(PlayerLoopTiming.LastPostLateUpdate);
-            await WaitWhilePaused();
             try {
                 action?.Invoke();
             }
@@ -145,10 +137,8 @@ namespace Vault.BetterCoroutine {
         private async UniTask EverySecondDoInternal(Action todo, Func<bool> toAbort, Func<float> seconds) {
             try {
                 while (!toAbort?.Invoke() ?? true) {
-                    await WaitWhilePaused();
                     var waitSeconds = seconds != null ? seconds.Invoke() : 1f;
                     await UniTask.Delay(TimeSpan.FromSeconds(waitSeconds), cancellationToken: _cancellationTokenSource.Token);
-                    await WaitWhilePaused();
                     todo?.Invoke();
                 }
             }
@@ -224,18 +214,18 @@ namespace Vault.BetterCoroutine {
         }
 
         public void Pause() {
-            if (_isFinished) return;
-            _isPaused = true;
-            // create a new gate if none exists, so awaiters can wait
-            _resumeTcs ??= new UniTaskCompletionSource<bool>();
+            // if (_isFinished) return;
+            // _isPaused = true;
+            // // create a new gate if none exists, so awaiters can wait
+            // _resumeTcs ??= new UniTaskCompletionSource<bool>();
         }
 
         public void Unpause() {
-            if (!_isPaused) return;
-            _isPaused = false;
-            // release any awaiters
-            _resumeTcs?.TrySetResult(true);
-            _resumeTcs = null;
+            // if (!_isPaused) return;
+            // _isPaused = false;
+            // // release any awaiters
+            // _resumeTcs?.TrySetResult(true);
+            // _resumeTcs = null;
         }
 
         public void AndAfterFinishDo(Action afterFinished) {
