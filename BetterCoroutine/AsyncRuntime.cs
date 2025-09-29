@@ -11,7 +11,7 @@ namespace Vault.BetterCoroutine {
         private bool _isFinished;
         private bool _isRunning;
         private bool _isPaused;
-        private UniTaskCompletionSource<bool> _resumeTcs;
+        // private UniTaskCompletionSource<bool> _resumeTcs;
 
         public bool IsFinished => _isFinished;
 
@@ -54,7 +54,7 @@ namespace Vault.BetterCoroutine {
 
         public void Wait() {
             // Synchronously waits for the UniTask to complete. Avoid on main thread.
-            _currentTask.GetAwaiter().GetResult();
+            // _currentTask.GetAwaiter().GetResult();
         }
 
         // private async UniTask WaitWhilePaused() {
@@ -235,11 +235,10 @@ namespace Vault.BetterCoroutine {
         private void TaskFinished(bool manual) {
             if (_isFinished) return;
             _isFinished = true;
-            var handler = OnFinished;
             // Invoke callbacks on main thread
             UnityThread.executeInUpdate(() => {
                 _afterFinished?.Invoke();
-                handler?.Invoke(manual);
+                OnFinished?.Invoke(manual);
             });
         }
 
