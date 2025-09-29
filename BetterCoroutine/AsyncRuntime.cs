@@ -23,27 +23,27 @@ namespace Vault.BetterCoroutine {
 
         private AsyncRuntime(UniTask currentTask, CancellationTokenSource cancellationTokenSource) : this(currentTask) {
             _cancellationTokenSource = cancellationTokenSource ?? new CancellationTokenSource();
-            _currentTask = currentTask.AttachExternalCancellation(_cancellationTokenSource.Token);
+            _currentTask = currentTask.AttachExternalCancellation(_cancellationTokenSource.Token).Preserve();
         }
 
         private AsyncRuntime(UniTask currentTask) {
-            _currentTask = currentTask.AttachExternalCancellation(_cancellationTokenSource.Token);
+            _currentTask = currentTask.AttachExternalCancellation(_cancellationTokenSource.Token).Preserve();
         }
 
         private AsyncRuntime(Action toExecute, bool isEndOfFrame) {
-            _currentTask = isEndOfFrame ? WaitForEndOfFrameInternal(toExecute) : CreateInternal(toExecute);
+            _currentTask = isEndOfFrame ? WaitForEndOfFrameInternal(toExecute).Preserve() : CreateInternal(toExecute).Preserve();
         }
 
         private AsyncRuntime(Action toExecute, Func<bool> waitUntilToExecute) {
-            _currentTask = WaitUntilInternal(waitUntilToExecute, toExecute);
+            _currentTask = WaitUntilInternal(waitUntilToExecute, toExecute).Preserve();
         }
 
         private AsyncRuntime(Action toExecute, float secondsUntilExecute) {
-            _currentTask = WaitForSecondsInternal(toExecute, secondsUntilExecute);
+            _currentTask = WaitForSecondsInternal(toExecute, secondsUntilExecute).Preserve();
         }
 
         private AsyncRuntime(Action todo, Func<bool> toAbort, Func<float> seconds) {
-            _currentTask = EverySecondDoInternal(todo, toAbort, seconds);
+            _currentTask = EverySecondDoInternal(todo, toAbort, seconds).Preserve();
         }
 
         /// Returns true if and only if the coroutine is running. Paused tasks are considered to be running.
@@ -57,14 +57,14 @@ namespace Vault.BetterCoroutine {
             _currentTask.GetAwaiter().GetResult();
         }
 
-        private async UniTask WaitWhilePaused() {
-            // Simple pause gate: waits until unpaused; releases also when stopped.
-            while (_isPaused && !_isFinished) {
-                if (_cancellationTokenSource.IsCancellationRequested) break;
-                _resumeTcs ??= new UniTaskCompletionSource<bool>();
-                await _resumeTcs.Task;
-            }
-        }
+        // private async UniTask WaitWhilePaused() {
+        //     // Simple pause gate: waits until unpaused; releases also when stopped.
+        //     while (_isPaused && !_isFinished) {
+        //         if (_cancellationTokenSource.IsCancellationRequested) break;
+        //         _resumeTcs ??= new UniTaskCompletionSource<bool>();
+        //         await _resumeTcs.Task;
+        //     }
+        // }
 
         private async UniTask WrapWithPause(UniTask task) {
             await task;
