@@ -23,6 +23,7 @@ namespace BetterCoroutine.AwaitRuntime {
                 action?.Invoke();
                 isRunning = false;
                 afterFinished?.Invoke();
+                isFinished = true;
             }
             catch (Exception e) {
                 isRunning = false;

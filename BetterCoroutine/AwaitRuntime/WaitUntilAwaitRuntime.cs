@@ -28,8 +28,7 @@ namespace BetterCoroutine.AwaitRuntime {
         public async void Start() {
             try {
                 isRunning = true;
-                var condition = toWaitFor;
-                await UniTask.WaitUntil(() => condition.Invoke(), PlayerLoopTiming.Update, cancellationToken);
+                await UniTask.WaitUntil(() => toWaitFor.Invoke(), PlayerLoopTiming.Update, cancellationToken);
                 toExecute.Invoke();
                 isRunning = false;
                 afterFinished?.Invoke();
