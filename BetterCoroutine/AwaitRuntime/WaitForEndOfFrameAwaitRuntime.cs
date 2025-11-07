@@ -2,7 +2,7 @@
 using UnityEngine;
 
 namespace BetterCoroutine.AwaitRuntime {
-    public class BackgroundAwaitRuntime : IAwaitRuntime {
+    public class WaitForEndOfFrameAwaitRuntime : IAwaitRuntime {
         private readonly IAwaitRuntime.WaitAction action;
         private bool isRunning;
         private bool isFinished;
@@ -11,7 +11,7 @@ namespace BetterCoroutine.AwaitRuntime {
         public bool Running => isRunning;
         public bool IsFinished => isFinished;
 
-        public BackgroundAwaitRuntime(IAwaitRuntime.WaitAction action, bool autoStart = true) {
+        public WaitForEndOfFrameAwaitRuntime(IAwaitRuntime.WaitAction action, bool autoStart = true) {
             this.action = action;
             if (autoStart) Start();
         }
@@ -19,8 +19,8 @@ namespace BetterCoroutine.AwaitRuntime {
         public async void Start() {
             try {
                 isRunning = true;
-                await Awaitable.BackgroundThreadAsync();
-                action.Invoke();
+                await Awaitable.NextFrameAsync();
+                action?.Invoke();
                 isRunning = false;
                 afterFinished?.Invoke();
                 isFinished = true;

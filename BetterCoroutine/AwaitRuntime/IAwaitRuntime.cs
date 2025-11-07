@@ -43,7 +43,7 @@ namespace BetterCoroutine.AwaitRuntime {
             return new WaitForSecondsAwaitRuntime(toExecute, seconds, autoStart);
         }
 
-        static IAwaitRuntime WaitUntil(WaitAction execute, WaitUntilAwaitRuntime.WaitCondition after, bool autoStart = true) {
+        static IAwaitRuntime WaitUntil(WaitUntilAwaitRuntime.WaitCondition after, WaitAction execute, bool autoStart = true) {
             return new WaitUntilAwaitRuntime(execute, after, autoStart);
         }
 
@@ -60,6 +60,10 @@ namespace BetterCoroutine.AwaitRuntime {
 
         static IAwaitRuntime MoveToMain(WaitAction action, bool autoStart = true) {
             return new MainAwaitRuntime(action, autoStart);
+        }
+
+        static IAwaitRuntime WaitForEndOfFrame(WaitAction toExecute, bool autoStart = true) {
+            return new WaitForEndOfFrameAwaitRuntime(toExecute, autoStart);
         }
     }
 }
