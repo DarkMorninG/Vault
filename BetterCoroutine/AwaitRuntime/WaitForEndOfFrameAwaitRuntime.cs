@@ -19,7 +19,7 @@ namespace BetterCoroutine.AwaitRuntime {
         public async void Start() {
             try {
                 isRunning = true;
-                await Awaitable.NextFrameAsync();
+                await Awaitable.EndOfFrameAsync();
                 action?.Invoke();
                 isRunning = false;
                 afterFinished?.Invoke();
