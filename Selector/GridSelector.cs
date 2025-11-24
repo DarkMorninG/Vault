@@ -53,7 +53,7 @@ namespace Vault.Selector {
                     currentColumn = 0;
                     currentRow = 0;
                 } else {
-                    currentRow += 1;
+                    currentColumn += 1;
                 }
             } else {
                 if (currentColumn + 1 > columnLength) {
