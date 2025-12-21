@@ -98,8 +98,7 @@ namespace Vault {
             return list.IsEmpty() ? default : list[rnd.Next(0, list.Count)];
         }
         
-        public static T GetRandomItem<T>(this List<T> list, int seed) {
-            var rnd = new Random(seed);
+        public static T GetRandomItem<T>(this List<T> list, Random rnd) {
             return list.IsEmpty() ? default : list[rnd.Next(0, list.Count)];
         }
 
