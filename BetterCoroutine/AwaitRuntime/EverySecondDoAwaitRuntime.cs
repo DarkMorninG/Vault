@@ -44,6 +44,7 @@ namespace BetterCoroutine.AwaitRuntime {
             }
             catch (Exception e) {
                 isRunning = false;
+                afterFinished?.Invoke();
                 if (e is OperationCanceledException) {
                     Debug.LogWarning($"WaitForSecondsAwaitRuntime was stopped from: {e.StackTrace}");
                 } else {
